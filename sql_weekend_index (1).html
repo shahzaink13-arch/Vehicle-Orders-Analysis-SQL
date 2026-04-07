@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL Weekend Analysis — Shahzain Sher Khan</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07080f;
+    --surface: #0e0f1a;
+    --card: #12131f;
+    --border: #1f2035;
+    --accent1: #a78bfa;
+    --accent2: #38bdf8;
+    --accent3: #fb923c;
+    --accent4: #4ade80;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    overflow-x: hidden;
+  }
+
+  /* Noise texture overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 70% 50% at 10% 10%, rgba(167,139,250,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 90% 80%, rgba(56,189,248,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 50% 50%, rgba(251,146,60,0.03) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 80px 0 60px;
+    text-align: center;
+    position: relative;
+  }
+
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent1);
+    border: 1px solid rgba(167,139,250,0.3);
+    padding: 7px 18px;
+    border-radius: 3px;
+    margin-bottom: 32px;
+    background: rgba(167,139,250,0.06);
+    animation: fadeDown 0.5s ease both;
+  }
+
+  .hero h1 {
+    font-size: clamp(42px, 8vw, 80px);
+    font-weight: 800;
+    line-height: 1.0;
+    margin-bottom: 16px;
+    animation: fadeDown 0.5s 0.1s ease both;
+  }
+
+  .line1 {
+    background: linear-gradient(135deg, var(--accent1) 0%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: block;
+  }
+
+  .line2 {
+    background: linear-gradient(135deg, var(--accent3) 0%, var(--accent4) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: block;
+  }
+
+  .hero-sub {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 36px;
+    animation: fadeDown 0.5s 0.2s ease both;
+  }
+
+  .cursor { display: inline-block; width: 2px; height: 1em; background: var(--accent1); margin-left: 3px; vertical-align: middle; animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    animation: fadeDown 0.5s 0.3s ease both;
+  }
+
+  .badge {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    padding: 5px 12px;
+    border-radius: 3px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  .b1 { background: rgba(167,139,250,0.12); color: var(--accent1); border: 1px solid rgba(167,139,250,0.25); }
+  .b2 { background: rgba(56,189,248,0.12); color: var(--accent2); border: 1px solid rgba(56,189,248,0.25); }
+  .b3 { background: rgba(251,146,60,0.12); color: var(--accent3); border: 1px solid rgba(251,146,60,0.25); }
+  .b4 { background: rgba(74,222,128,0.12); color: var(--accent4); border: 1px solid rgba(74,222,128,0.25); }
+
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); margin: 48px 0; }
+
+  .section-title {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── STATS ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 50px;
+  }
+
+  @media (max-width: 600px) { .stats-row { grid-template-columns: repeat(3, 1fr); } }
+
+  .stat {
+    background: var(--card);
+    padding: 22px 12px;
+    text-align: center;
+    transition: background 0.2s;
+  }
+  .stat:hover { background: var(--surface); }
+
+  .stat-number { font-size: 32px; font-weight: 800; line-height: 1; margin-bottom: 6px; }
+  .stat-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
+
+  /* ── ABOUT ── */
+  .about-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 50px; }
+  @media (max-width: 600px) { .about-grid { grid-template-columns: 1fr 1fr; } }
+
+  .about-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .about-card:hover { border-color: var(--accent1); transform: translateY(-2px); }
+  .about-card .label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 2px; color: var(--accent4); text-transform: uppercase; margin-bottom: 8px; }
+  .about-card .value { font-size: 13px; font-weight: 600; line-height: 1.5; }
+
+  /* ── TOPICS ── */
+  .topics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 50px; }
+  @media (max-width: 600px) { .topics-grid { grid-template-columns: 1fr; } }
+
+  .topic-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    transition: all 0.2s;
+  }
+  .topic-card:hover { border-color: var(--accent1); background: rgba(167,139,250,0.04); }
+
+  .topic-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .topic-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .topic-title { font-size: 14px; font-weight: 800; }
+  .topic-sub { font-family: var(--font-mono); font-size: 9px; color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
+
+  .query-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .query-list li {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: #94a3b8;
+    padding: 5px 10px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 3px;
+    border-left: 2px solid var(--border);
+    transition: border-color 0.2s;
+  }
+  .query-list li:hover { border-left-color: var(--accent1); color: var(--text); }
+
+  /* ── CODE ── */
+  .code-file { background: var(--card); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 14px; }
+  .code-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 16px; display: flex; align-items: center; gap: 10px; }
+  .code-dots { display: flex; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #ff5f57; }
+  .dot-y { background: #febc2e; }
+  .dot-g { background: #28c840; }
+  .code-filename { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+
+  pre { padding: 20px; overflow-x: auto; font-family: var(--font-mono); font-size: 11px; line-height: 1.8; color: #94a3b8; }
+  .kw  { color: #a78bfa; font-weight: 700; }
+  .fn  { color: #4ade80; }
+  .str { color: #fb923c; }
+  .cm  { color: #2d3a4a; font-style: italic; }
+  .num { color: #38bdf8; }
+
+  /* ── SKILLS ── */
+  .skills-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 50px; }
+  @media (max-width: 600px) { .skills-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .skill-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 12px;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .skill-card:hover { border-color: var(--accent1); background: rgba(167,139,250,0.06); transform: translateY(-2px); }
+  .skill-icon { font-size: 20px; margin-bottom: 8px; }
+  .skill-name { font-family: var(--font-mono); font-size: 9px; color: var(--accent1); font-weight: 700; letter-spacing: 1px; }
+
+  /* ── TABLES ── */
+  .tables-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 50px; }
+  @media (max-width: 600px) { .tables-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .table-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s;
+  }
+  .table-card:hover { border-color: var(--accent2); transform: translateX(4px); }
+  .table-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent2); flex-shrink: 0; }
+  .table-name { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--accent2); }
+
+  /* ── FOOTER ── */
+  .footer { border-top: 1px solid var(--border); padding: 48px 0; text-align: center; }
+  .footer-name { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .footer-links { display: flex; gap: 24px; justify-content: center; margin-top: 20px; }
+  .footer-link { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-decoration: none; letter-spacing: 1px; transition: color 0.2s; }
+  .footer-link:hover { color: var(--accent1); }
+
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-tag">📊 Advanced SQL Project</div>
+    <h1>
+      <span class="line1">Weekend</span>
+      <span class="line2">Analysis</span>
+    </h1>
+    <p class="hero-sub">shahzaink13-arch / SQL-Weekend-Analysis<span class="cursor"></span></p>
+    <div class="badges">
+      <span class="badge b1">MySQL</span>
+      <span class="badge b2">Window Functions</span>
+      <span class="badge b3">CTEs</span>
+      <span class="badge b4">Multi-Table JOINs</span>
+      <span class="badge b1">Date Cleaning</span>
+      <span class="badge b2">String Functions</span>
+      <span class="badge b3">UNION</span>
+      <span class="badge b4">Sales 2015–2017</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat">
+      <div class="stat-number" style="color:var(--accent1)">8</div>
+      <div class="stat-label">Tables</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number" style="color:var(--accent2)">3</div>
+      <div class="stat-label">Sales Years</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number" style="color:var(--accent3)">15+</div>
+      <div class="stat-label">Queries</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number" style="color:var(--accent4)">10+</div>
+      <div class="stat-label">Concepts</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number" style="color:var(--accent1)">∞</div>
+      <div class="stat-label">Insights</div>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <p class="section-title">// Project Overview</p>
+  <div class="about-grid">
+    <div class="about-card">
+      <div class="label">🎯 Objective</div>
+      <div class="value">Advanced SQL analysis across sales, products, customers, returns & territories</div>
+    </div>
+    <div class="about-card">
+      <div class="label">🗄️ Database</div>
+      <div class="value">Weekend_Analysis — 8 tables with 3 years of sales data</div>
+    </div>
+    <div class="about-card">
+      <div class="label">📅 Data Range</div>
+      <div class="value">Sales 2015, 2016 & 2017 unified with UNION queries</div>
+    </div>
+    <div class="about-card">
+      <div class="label">🔗 Joins Used</div>
+      <div class="value">INNER, LEFT, RIGHT, CROSS & SELF JOINs across 4+ tables</div>
+    </div>
+    <div class="about-card">
+      <div class="label">🧹 Data Cleaning</div>
+      <div class="value">STR_TO_DATE, REPLACE, CASE WHEN for multi-format date fixing</div>
+    </div>
+    <div class="about-card">
+      <div class="label">🪟 Window Fn</div>
+      <div class="value">SUM, RANK, DENSE_RANK, AVG, NTILE, MAX with PARTITION BY</div>
+    </div>
+  </div>
+
+  <!-- DATABASE TABLES -->
+  <p class="section-title">// Database Tables</p>
+  <div class="tables-grid" style="margin-bottom:50px;">
+    <div class="table-card"><div class="table-dot"></div><div class="table-name">Customers</div></div>
+    <div class="table-card"><div class="table-dot"></div><div class="table-name">Products</div></div>
+    <div class="table-card"><div class="table-dot"></div><div class="table-name">Sales2015</div></div>
+    <div class="table-card"><div class="table-dot"></div><div class="table-name">Sales2016</div></div>
+    <div class="table-card"><div class="table-dot"></div><div class="table-name">Sales2017</div></div>
+    <div class="table-card"><div class="table-dot"></div><div class="table-name">Returns</div></div>
+    <div class="table-card"><div class="table-dot"></div><div class="table-name">Territories</div></div>
+    <div class="table-card"><div class="table-dot"></div><div class="table-name">ProductCategories</div></div>
+    <div class="table-card"><div class="table-dot"></div><div class="table-name">ProductSubCategories</div></div>
+  </div>
+
+  <!-- ANALYSIS TOPICS -->
+  <p class="section-title">// Analysis Performed</p>
+  <div class="topics-grid">
+
+    <div class="topic-card">
+      <div class="topic-header">
+        <div class="topic-icon" style="background:rgba(167,139,250,0.12)">👥</div>
+        <div>
+          <div class="topic-title">Customer Analysis</div>
+          <div class="topic-sub">STRING · FILTER · AGGREGATE</div>
+        </div>
+      </div>
+      <ul class="query-list">
+        <li>Filter by education + children count</li>
+        <li>CONCAT full name from first + last</li>
+        <li>Income cleaning (remove $, commas, K)</li>
+        <li>Occupation-wise avg income</li>
+        <li>Same last name & birthdate (SELF JOIN)</li>
+        <li>Income rank by education + occupation</li>
+      </ul>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header">
+        <div class="topic-icon" style="background:rgba(56,189,248,0.12)">📦</div>
+        <div>
+          <div class="topic-title">Product Analysis</div>
+          <div class="topic-sub">PRICE · PROFIT · CATEGORY</div>
+        </div>
+      </div>
+      <ul class="query-list">
+        <li>Top 10 products by price (DESC)</li>
+        <li>Total cost vs total price</li>
+        <li>Gross profit calculation</li>
+        <li>Avg profit per product color</li>
+        <li>Price quartile split using NTILE(4)</li>
+        <li>Products never returned (LEFT JOIN + NULL)</li>
+      </ul>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header">
+        <div class="topic-icon" style="background:rgba(251,146,60,0.12)">📈</div>
+        <div>
+          <div class="topic-title">Sales Analysis</div>
+          <div class="topic-sub">UNION · REVENUE · TRENDS</div>
+        </div>
+      </div>
+      <ul class="query-list">
+        <li>UNION of 3 years sales data</li>
+        <li>Top 10 highest revenue products</li>
+        <li>Customer + product order summary</li>
+        <li>Seasonal sales trends (Year/Month)</li>
+        <li>Monthly revenue with NTILE tercile</li>
+        <li>Cumulative sales per salesperson</li>
+      </ul>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header">
+        <div class="topic-icon" style="background:rgba(74,222,128,0.12)">🔄</div>
+        <div>
+          <div class="topic-title">Returns Analysis</div>
+          <div class="topic-sub">JOINS · TERRITORY · CATEGORY</div>
+        </div>
+      </div>
+      <ul class="query-list">
+        <li>Total returns by category (2017)</li>
+        <li>Return qty per year</li>
+        <li>Returns by continent & region</li>
+        <li>Top 10 most returned products</li>
+        <li>4-table JOIN for category returns</li>
+        <li>INNER vs LEFT JOIN comparison</li>
+      </ul>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header">
+        <div class="topic-icon" style="background:rgba(167,139,250,0.12)">🪟</div>
+        <div>
+          <div class="topic-title">Window Functions</div>
+          <div class="topic-sub">RANK · MOVING AVG · NTILE</div>
+        </div>
+      </div>
+      <ul class="query-list">
+        <li>3-day & 5-day moving average</li>
+        <li>Cumulative sum per salesperson</li>
+        <li>RANK vs DENSE_RANK on sales</li>
+        <li>NTILE(4) price quartile split</li>
+        <li>MAX income per prefix group</li>
+        <li>Income rank by education + occupation</li>
+      </ul>
+    </div>
+
+    <div class="topic-card">
+      <div class="topic-header">
+        <div class="topic-icon" style="background:rgba(56,189,248,0.12)">🧹</div>
+        <div>
+          <div class="topic-title">Data Cleaning</div>
+          <div class="topic-sub">DATES · STRING · FORMAT</div>
+        </div>
+      </div>
+      <ul class="query-list">
+        <li>STR_TO_DATE for multi-format dates</li>
+        <li>CASE WHEN for mixed date formats</li>
+        <li>REPLACE to strip $, commas, K</li>
+        <li>RPAD for phone number padding</li>
+        <li>LEFT() for SKU category extraction</li>
+        <li>INSTR to find @ position in email</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- KEY QUERIES -->
+  <p class="section-title">// Key Queries</p>
+
+  <div class="code-file">
+    <div class="code-header">
+      <div class="code-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+      <span class="code-filename">seasonal_sales_trends.sql</span>
+    </div>
+    <pre><span class="cm">-- Seasonal Sales Trends across 2015/16/17 by Category</span>
+
+<span class="kw">WITH</span> AllSales <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> * <span class="kw">FROM</span> Sales2015
+  <span class="kw">UNION</span>
+  <span class="kw">SELECT</span> * <span class="kw">FROM</span> Sales2016
+  <span class="kw">UNION</span>
+  <span class="kw">SELECT</span> * <span class="kw">FROM</span> Sales2017
+)
+<span class="kw">SELECT</span>
+  <span class="fn">YEAR</span>(s.OrderDate)  <span class="kw">AS</span> Year,
+  <span class="fn">MONTH</span>(s.OrderDate) <span class="kw">AS</span> Month,
+  pc.CategoryName,
+  <span class="fn">SUM</span>(s.OrderQuantity) <span class="kw">AS</span> TotalOrderQty
+<span class="kw">FROM</span> AllSales s
+<span class="kw">JOIN</span> Products p          <span class="kw">ON</span> p.ProductKey = s.ProductKey
+<span class="kw">JOIN</span> ProductSubcategories ps <span class="kw">ON</span> p.ProductSubcategoryKey = ps.ProductSubcategoryKey
+<span class="kw">JOIN</span> ProductCategories pc   <span class="kw">ON</span> pc.ProductCategoryKey = ps.ProductCategoryKey
+<span class="kw">GROUP BY</span> <span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>;</pre>
+  </div>
+
+  <div class="code-file">
+    <div class="code-header">
+      <div class="code-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+      <span class="code-filename">window_functions_analysis.sql</span>
+    </div>
+    <pre><span class="cm">-- Cumulative Sales per Salesperson</span>
+<span class="kw">SELECT</span> *,
+  <span class="fn">SUM</span>(SaleAmount) <span class="kw">OVER</span>(
+    <span class="kw">PARTITION BY</span> Salesperson
+    <span class="kw">ORDER BY</span> SaleDate
+  ) <span class="kw">AS</span> Cumulative_Sales
+
+<span class="cm">-- 3-Day Moving Average</span>
+<span class="fn">AVG</span>(SaleAmount) <span class="kw">OVER</span>(
+  <span class="kw">ORDER BY</span> SaleDate
+  <span class="kw">ROWS BETWEEN</span> <span class="num">1</span> <span class="kw">PRECEDING AND</span> <span class="num">1</span> <span class="kw">FOLLOWING</span>
+) <span class="kw">AS</span> Moving_Avg
+
+<span class="cm">-- Income Rank by Education + Occupation</span>
+<span class="fn">DENSE_RANK</span>() <span class="kw">OVER</span>(
+  <span class="kw">PARTITION BY</span> EducationLevel, Occupation
+  <span class="kw">ORDER BY</span> AnnualIncome <span class="kw">DESC</span>
+) <span class="kw">AS</span> IncomeRank</pre>
+  </div>
+
+  <div class="code-file" style="margin-bottom:50px;">
+    <div class="code-header">
+      <div class="code-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+      <span class="code-filename">top_revenue_products.sql</span>
+    </div>
+    <pre><span class="cm">-- Top 10 Products by Total Revenue (2015-2017)</span>
+
+<span class="kw">SELECT</span>
+  ProductName,
+  <span class="fn">ROUND</span>(<span class="fn">SUM</span>(s.OrderQuantity * p.ProductPrice)) <span class="kw">AS</span> TotalRevenue
+<span class="kw">FROM</span> (
+  <span class="kw">SELECT</span> * <span class="kw">FROM</span> Sales2015
+  <span class="kw">UNION</span>
+  <span class="kw">SELECT</span> * <span class="kw">FROM</span> Sales2016
+  <span class="kw">UNION</span>
+  <span class="kw">SELECT</span> * <span class="kw">FROM</span> Sales2017
+) <span class="kw">AS</span> s
+<span class="kw">JOIN</span> Products p <span class="kw">ON</span> p.ProductKey = s.ProductKey
+<span class="kw">GROUP BY</span> <span class="num">1</span>
+<span class="kw">ORDER BY</span> TotalRevenue <span class="kw">DESC</span>
+<span class="kw">LIMIT</span> <span class="num">10</span>;</pre>
+  </div>
+
+  <!-- SQL CONCEPTS -->
+  <p class="section-title">// SQL Concepts Applied</p>
+  <div class="skills-grid">
+    <div class="skill-card"><div class="skill-icon">🔗</div><div class="skill-name">5 JOIN Types</div></div>
+    <div class="skill-card"><div class="skill-icon">🧱</div><div class="skill-name">CTEs</div></div>
+    <div class="skill-card"><div class="skill-icon">🪟</div><div class="skill-name">Window Fn</div></div>
+    <div class="skill-card"><div class="skill-icon">🔀</div><div class="skill-name">UNION</div></div>
+    <div class="skill-card"><div class="skill-icon">📅</div><div class="skill-name">Date Cleaning</div></div>
+    <div class="skill-card"><div class="skill-icon">🔤</div><div class="skill-name">String Fn</div></div>
+    <div class="skill-card"><div class="skill-icon">📊</div><div class="skill-name">Aggregations</div></div>
+    <div class="skill-card"><div class="skill-icon">⚡</div><div class="skill-name">LAG / LEAD</div></div>
+    <div class="skill-card"><div class="skill-icon">🎯</div><div class="skill-name">NTILE</div></div>
+    <div class="skill-card"><div class="skill-icon">🏆</div><div class="skill-name">DENSE_RANK</div></div>
+    <div class="skill-card"><div class="skill-icon">🔍</div><div class="skill-name">Subqueries</div></div>
+    <div class="skill-card"><div class="skill-icon">🧹</div><div class="skill-name">Data Cleaning</div></div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-name">
+      <span style="background:linear-gradient(135deg,var(--accent1),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Shahzain</span>
+      <span style="background:linear-gradient(135deg,var(--accent3),var(--accent4));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;"> Sher Khan</span>
+    </div>
+    <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:6px;">Data Analyst · Bhopal, India</div>
+    <div class="footer-links">
+      <a class="footer-link" href="https://github.com/shahzaink13-arch">⭐ GitHub</a>
+      <a class="footer-link" href="mailto:Shahzaink13@gmail.com">✉ Email</a>
+      <a class="footer-link" href="#">💼 LinkedIn</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
